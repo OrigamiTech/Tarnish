@@ -1,5 +1,4 @@
-﻿#define SILENT
-using System;
+﻿using System;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Reflection;
@@ -27,20 +26,10 @@ namespace Tarnish
         [DllImport("kernel32.dll")]
         internal static extern IntPtr LocalFree(IntPtr hMem);
 
-        public static AssemblyName assemName = Assembly.GetExecutingAssembly().GetName();
-        public static string dumpDir = Environment.CurrentDirectory + @"\Dump\" + Environment.MachineName + "." + Environment.UserName + @"\";
+        public static AssemblyName AssemName = Assembly.GetExecutingAssembly().GetName();
+        public static string DumpDir = Environment.CurrentDirectory + @"\Dump\" + Environment.MachineName + "." + Environment.UserName + @"\";
 
-        public static void WriteLine(string s)
-        {
-            #if !SILENT
-            s += Environment.NewLine;
-            for (int i = 0; i < s.Length; i++)
-            {
-                Console.Write(s[i]);
-                System.Threading.Thread.Sleep(1);
-            }
-            #endif
-        }
+        // I stole this code from somewhere. It was open source. It's all cool.
         public static byte[] UnprotectData(byte[] data, int dwFlags)
         {
             DATA_BLOB data_blob1;

